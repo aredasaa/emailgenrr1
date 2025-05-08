@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Temporary</title>
+    <script>
+        async function loadInbox() {
+            const email = document.getElementById("email").textContent;
+            const password = document.getElementById("password").textContent;
+
+            const res = await fetch("/api/inbox", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            const inbox = document.getElementById("inbox");
+            inbox.innerHTML = "";
+
+            data.messages.forEach(msg => {
+                const li = document.createElement("li");
+                li.textContent = `📧 From: ${msg.from} | Subject: ${msg.subject}`;
+                inbox.appendChild(li);
+            });
+        }
+
+        setInterval(loadInbox, 10000);
+        window.onload = loadInbox;
+    </script>
+</head>
+<body>
+    <h1>📬 Temporary Email</h1>
+    <p>Email: <span id="email">{{ email }}</span></p>
+    <p>Password: <span id="password">{{ password }}</span></p>
+    <h2>Inbox</h2>
+    <ul id="inbox"></ul>
+</body>
+</html>

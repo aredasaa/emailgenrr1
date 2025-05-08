@@ -1,0 +1,107 @@
+/* Basic styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7fb;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+h1 {
+    color: #4A90E2;
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+.email-info p {
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+button {
+    background-color: #4A90E2;
+    color: white;
+    font-size: 0.85em;
+    border: none;
+    padding: 8px 16px;
+    margin: 6px 4px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #357ABD;
+}
+
+#copy-button {
+    background-color: #F5A623;
+    font-size: 0.75em;
+    padding: 6px 12px;
+    display: block;
+    margin: 10px auto 0 auto;
+    width: fit-content;
+}
+
+#copy-button:hover {
+    background-color: #d48815;
+}
+
+#inbox {
+    margin-top: 20px;
+}
+
+.message {
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message strong {
+    color: #4A90E2;
+}
+
+.empty-inbox {
+    color: #888;
+    font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    button {
+        font-size: 0.75em;
+        padding: 6px 12px;
+    }
+
+    .email-info p {
+        font-size: 1em;
+    }
+
+    #copy-button {
+        font-size: 0.7em;
+        padding: 5px 10px;
+    }
+}

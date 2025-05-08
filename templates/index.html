@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📬 Email genrr</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="max-w-xl mx-auto mt-10 bg-white shadow-lg rounded-xl p-6">
+    <h1 class="text-2xl font-bold mb-4 text-center">📬 Email genrr</h1>
+
+    <div class="mb-4 p-4 bg-gray-100 rounded-lg shadow-lg max-w-md mx-auto">
+        <p class="text-lg font-semibold text-gray-800"><strong>Email:</strong></p>
+        <span id="email" class="text-blue-600 text-xl font-bold block mt-2 p-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors duration-200 ease-in-out">
+          .... 
+        </span>
+    </div>      
+
+    <div class="text-center mb-4">
+        <p class="inline-block border border-red-300 px-3 py-1 rounded text-red-600 font-medium text-sm">
+          <strong>Time:</strong> <span id="timer">-</span>
+        </p>
+    </div>      
+
+    <div class="flex justify-center flex-wrap gap-2 mb-4">
+        <button onclick="createEmail()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm w-full sm:w-auto">
+          Create Email
+        </button>
+        <button onclick="checkInbox()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm w-full sm:w-auto">
+          Check Inbox
+        </button>
+        <button onclick="deleteEmail()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm w-full sm:w-auto">
+          Delete Email
+        </button>
+    </div>      
+
+    <!-- Tombol Copy Email -->
+    <div class="mb-4">
+        <button id="copy-email-button" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded mx-auto block w-full sm:w-auto">
+          Copy Email
+        </button>
+    </div>
+
+    <!-- Tombol Copy Code -->
+    <div class="mb-4">
+        <button id="copy-code-button" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 rounded mx-auto block w-full sm:w-auto">
+          Copy Code
+        </button>
+    </div>
+
+    <!-- Pop-up untuk pemberitahuan email disalin -->
+    <div id="popup" class="hidden bg-green-500 text-white text-center py-2 rounded mt-4 w-auto max-w-[90%] mx-auto">
+      Text copied to clipboard!
+    </div>
+
+    <div id="inbox" class="bg-gray-50 p-4 rounded border border-gray-200 max-h-64 overflow-auto w-full sm:w-auto">
+      <p class="text-gray-500">Inbox will appear here...</p>
+    </div>
+  </div>
+
+  <script>
+    let currentEmail = null;
+    let currentCode = null;  // Simpan kode verifikasi yang diterima
+    let inboxInterval = null;
+    let countdownInterval = null;
+    let timeRemaining = 3600; // 1 hour in seconds
+
+    function createEmail() {
+      fetch('/api/new-email', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          currentEmail = data.email;
+          document.getElementById('email').innerText = currentEmail;
+          document.getElementById('inbox').innerHTML = '<p class="text-gray-500">Checking inbox...</p>';
+          timeRemaining = 3600; // reset timer
+          startAutoRefresh();
+          startCountdown();
+        });
+    }
+
+    function checkInbox() {
+      if (!currentEmail) return;
+      fetch('/api/inbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentEmail })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const inbox = document.getElementById('inbox');
+        inbox.innerHTML = '';
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(msg => {
+            inbox.innerHTML += `
+              <div class="mb-2 p-2 border-b">
+                <p><strong>From:</strong> ${msg.from}</p>
+                <p><strong>Subject:</strong> ${msg.subject}</p>
+                <p class="text-gray-700">${msg.body}</p>
+              </div>
+            `;
+
+            // Menyimpan kode verifikasi jika ditemukan
+            const verificationCode = extractVerificationCode(msg.body);
+            if (verificationCode) {
+              currentCode = verificationCode;
+            }
+          });
+        } else {
+          inbox.innerHTML = '<p class="text-gray-500">No messages.</p>';
+        }
+      });
+    }
+
+    function deleteEmail() {
+      if (!currentEmail) return;
+      fetch('/api/delete-email', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentEmail })
+      })
+      .then(res => res.json())
+      .then(data => {
+        currentEmail = null;
+        currentCode = null; // Reset kode verifikasi
+        clearInterval(inboxInterval);
+        clearInterval(countdownInterval); // stop the countdown
+        document.getElementById('email').innerText = '-';
+        document.getElementById('inbox').innerHTML = '<p class="text-gray-500">Email deleted.</p>';
+        document.getElementById('timer').innerText = '-';
+      });
+    }
+
+    function startAutoRefresh() {
+      if (inboxInterval) clearInterval(inboxInterval);
+      inboxInterval = setInterval(checkInbox, 10000); // refresh inbox every 10 seconds
+    }
+
+    function startCountdown() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(function() {
+        if (timeRemaining <= 0) {
+          clearInterval(countdownInterval);
+          deleteEmail();
+        } else {
+          timeRemaining--;
+          document.getElementById('timer').innerText = formatTime(timeRemaining);
+        }
+      }, 1000); // update every second
+    }
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+
+    // Fungsi untuk mengekstrak kode verifikasi dari pesan
+    function extractVerificationCode(body) {
+      const regex = /Your code: (\d{6})/;
+      const match = body.match(regex);
+      return match ? match[1] : null;
+    }
+
+    // Fungsi untuk menyalin email ke clipboard dan menampilkan pop-up
+    function copyEmailToClipboard() {
+      const emailText = document.getElementById('email').innerText;
+      if (emailText !== '-') {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById('email'));
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        document.execCommand('copy');
+        selection.removeAllRanges(); // Menghapus seleksi setelah menyalin
+
+        // Menampilkan pop-up
+        const popup = document.getElementById('popup');
+        popup.classList.remove('hidden');  // Show pop-up
+        setTimeout(() => {
+          popup.classList.add('hidden'); // Hide pop-up after 2 seconds
+        }, 2000);
+      }
+    }
+
+    // Fungsi untuk menyalin kode verifikasi ke clipboard dan menampilkan pop-up
+    function copyCodeToClipboard() {
+      if (currentCode) {
+        const tempInput = document.createElement('input');
+        document.body.appendChild(tempInput);
+        tempInput.value = currentCode;
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+
+        // Menampilkan pop-up
+        const popup = document.getElementById('popup');
+        popup.classList.remove('hidden');  // Show pop-up
+        setTimeout(() => {
+          popup.classList.add('hidden'); // Hide pop-up after 2 seconds
+        }, 2000);
+      }
+    }
+
+    // Event listener untuk tombol salin email
+    document.getElementById('copy-email-button').addEventListener('click', copyEmailToClipboard);
+
+    // Event listener untuk tombol salin kode verifikasi
+    document.getElementById('copy-code-button').addEventListener('click', copyCodeToClipboard);
+  </script>
+</body>
+</html>
